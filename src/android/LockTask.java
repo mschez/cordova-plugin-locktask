@@ -185,7 +185,7 @@ public class LockTask extends CordovaPlugin {
   }
 
   static void fireEvent (String event) {
-    String js = "window.plugins.locktask.fireEvent(\"" + event + "\")";
+    String js = "window.locktask.fireEvent(\"" + event + "\")";
     sendJavascript(js);
   }
 

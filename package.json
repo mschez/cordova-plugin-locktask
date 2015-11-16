@@ -1,14 +1,32 @@
 {
-      "version": "0.0.1",
-      "name": "es.mschez.locktask.LockTask",
-      "cordova_name": "LockTask",
-      "description": "LockTask",
-      "license": "MIT",
-      "keywords": [],
-      "engines": [
-        {
-          "name": "cordova",
-          "version": ">=3.0.0"
-        }
-      ]
-    }
+  "name": "cordova-plugin-locktask",
+  "version": "0.0.1",
+  "description": "A Cordova plugin that provides access to Android’s screen pinning APIs",
+  "cordova": {
+    "id": "cordova-plugin-locktask",
+    "platforms": [
+      "android"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mschez/cordova-plugin-locktask.git"
+  },
+  "keywords": [
+    "cordova",
+    "android",
+    "screen pinning",
+    "startLockTask",
+    "stopLockTask",
+    "lollipop",
+    "api 21",
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "author": "Miguel Sánchez",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/mschez/cordova-plugin-locktask/issues"
+  },
+  "homepage": "https://github.com/mschez/cordova-plugin-locktask#readme"
+}
