@@ -1,4 +1,4 @@
-package com.livesure.plugins;
+package es.mschez.plugins;
 
 import android.app.Activity;
 import android.app.ActivityManager;

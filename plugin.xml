@@ -2,7 +2,7 @@
     <plugin
       xmlns="http://apache.org/cordova/ns/plugins/1.0"
       id="cordova-plugin-locktask"
-      version="0.0.1" >
+      version="0.0.3" >
       <name>cordova-plugin-locktask</name>
       <description>A Cordova plugin that provides access to Android’s screen pinning APIs</description>
       <license>Apache 2.0</license>
@@ -13,9 +13,13 @@
       <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
           <feature name="LockTask">
-            <param name="android-package" value="es.mschez.locktask.LockTask" />
+            <param
+              name="android-package"
+              value="es.mschez.plugins.LockTask" />
           </feature>
         </config-file>
-        <source-file src="src/android/LockTask.java" target-dir="src/es/mschez/locktask/LockTask/" />
+        <source-file
+          src="src/android/es/mschez/plugins/LockTask.java"
+          target-dir="src/es/mschez/plugins" />
       </platform>
     </plugin>
