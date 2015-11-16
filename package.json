@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-locktask",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A Cordova plugin that provides access to Android’s screen pinning APIs",
   "cordova": {
     "id": "cordova-plugin-locktask",
