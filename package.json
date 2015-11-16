@@ -1,0 +1,14 @@
+{
+      "version": "0.0.1",
+      "name": "es.mschez.locktask.LockTask",
+      "cordova_name": "LockTask",
+      "description": "LockTask",
+      "license": "MIT",
+      "keywords": [],
+      "engines": [
+        {
+          "name": "cordova",
+          "version": ">=3.0.0"
+        }
+      ]
+    }
