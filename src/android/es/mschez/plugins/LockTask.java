@@ -211,13 +211,17 @@ public class LockTask extends CordovaPlugin {
   }
 
   private static void initLockTaskInteval(final ActivityManager activityManager) {
+    if (handlerLockTaskActive != null) {
+      handlerLockTaskActive.removeCallbacksAndMessages(null);
+    }
+
     handlerLockTaskActive = new Handler();
     handlerLockTaskActive.postDelayed(new Runnable() {
       private boolean isStarted = false;
       @Override
       public void run() {
         if (!activityManager.isInLockTaskMode() && isStarted) {
-          handlerLockTaskActive.removeCallbacks(this);
+          handlerLockTaskActive.removeCallbacksAndMessages(null);
           fireEvent("LockTaskModeExiting");
         } else {
           if(activityManager.isInLockTaskMode() && !isStarted) {
