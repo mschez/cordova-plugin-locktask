@@ -2,9 +2,12 @@ package es.mschez.plugins;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.os.Build;
-import android.os.Handler;
+
+import android.util.Log;
 
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
@@ -14,100 +17,47 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import java.lang.reflect.Method;
-
 public class LockTask extends CordovaPlugin {
-
   private enum Actions {
     START_LOCK_TASK,
     STOP_LOCK_TASK,
-    IS_LOCK_TASK_SUPPORTED
+    IS_LOCK_TASK_SUPPORTED,
+    IS_IN_LOCK_TASK_MODE
   }
 
-  // Reference to the web view for static access
-  private static CordovaWebView webView;
   private Activity activity;
   private ActivityManager activityManager;
-  private static Handler handlerLockTaskActive;
+  private CordovaInterface cordova;
+  private DevicePolicyManager mDPM;
+  private String packageName;
 
-  /**
-   * Called after plugin construction and fields have been initialized.
-   * Prefer to use pluginInitialize instead since there is no value in
-   * having parameters on the initialize() function.
-   *
-   * pluginInitialize is not available for cordova 3.0-3.5 !
-   */
   @Override
-  public void initialize (final CordovaInterface cordova, CordovaWebView webView) {
-    LockTask.webView = super.webView;
+  public void initialize(CordovaInterface cordovaInterface, CordovaWebView webView) {
+    super.initialize(cordova, webView);
 
-    activity = cordova.getActivity();
+    activity = cordovaInterface.getActivity();
     activityManager = (ActivityManager) activity.getSystemService(Context.ACTIVITY_SERVICE);
+    cordova = cordovaInterface;
+    mDPM = (DevicePolicyManager) activity.getSystemService(Context.DEVICE_POLICY_SERVICE);
+    packageName = activity.getPackageName();
   }
 
-  /**
-   * Called when the system is about to start resuming a previous activity.
-   *
-   * @param multitasking
-   *      Flag indicating if multitasking is turned on for app
-   */
-  @Override
-  public void onPause(boolean multitasking) {
-    super.onPause(multitasking);
-  }
-
-  /**
-   * Called when the activity will start interacting with the user.
-   *
-   * @param multitasking
-   *      Flag indicating if multitasking is turned on for app
-   */
-  @Override
-  public void onResume(boolean multitasking) {
-    super.onResume(multitasking);
-  }
-
-  /**
-   * The final call you receive before your activity is destroyed.
-   */
-  @Override
-  public void onDestroy() {
-  }
-
-  /**
-   * Executes the request.
-   *
-   * This method is called from the WebView thread. To do a non-trivial
-   * amount of work, use:
-   *      cordova.getThreadPool().execute(runnable);
-   *
-   * To run on the UI thread, use:
-   *     cordova.getActivity().runOnUiThread(runnable);
-   *
-   * @param action
-   *      The action to execute.
-   * @param args
-   *      The exec() arguments in JSON form.
-   * @param callbackContext
-   *      The callback context used when calling back into JavaScript.
-   * @return
-   *      Whether the action was valid.
-   */
-  @Override
-  public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
+  public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
     try {
       Actions currentAction = Actions.valueOf(action);
       switch (currentAction) {
         case START_LOCK_TASK:
-          this.cordova.getActivity().runOnUiThread(new Runnable() {
+          this.cordova.getThreadPool().execute(new Runnable() {
+            private String adminClassName = args.length() > 0 ? args.getString(0) : "";
+
             @Override
             public void run() {
-              startLockTask(callbackContext);
+              startLockTask(callbackContext, adminClassName);
             }
           });
           break;
         case STOP_LOCK_TASK:
-          this.cordova.getActivity().runOnUiThread(new Runnable() {
+          this.cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
               stopLockTask(callbackContext);
@@ -115,10 +65,18 @@ public class LockTask extends CordovaPlugin {
           });
           break;
         case IS_LOCK_TASK_SUPPORTED:
-          this.cordova.getActivity().runOnUiThread(new Runnable() {
+          this.cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
               isLockTaskSupported(callbackContext);
+            }
+          });
+          break;
+        case IS_IN_LOCK_TASK_MODE:
+          this.cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+              isInLockTaskMode(callbackContext);
             }
           });
           break;
@@ -128,40 +86,35 @@ public class LockTask extends CordovaPlugin {
       }
 
       return true;
-
     } catch (Exception e) {
       callbackContext.error(e.getMessage());
-
       return false;
     }
   }
 
-  /**
-   * Use this function to start lockTask mode
-   *
-   * @param callbackContext
-   *        Cordova callback context
-   * @return true, valid action
-   */
-  public boolean startLockTask(CallbackContext callbackContext) {
+  public boolean startLockTask(CallbackContext callbackContext, String adminClassName) {
+    Log.i("LockTask", "adminClassName: " + adminClassName);
+    Log.i("LockTask", "packageName: " + packageName);
+    Log.i("LockTask", "isDeviceOwner: " + mDPM.isDeviceOwnerApp(packageName));
+    Log.i("LockTask", "isLockTaskPermitted: " + mDPM.isLockTaskPermitted(packageName));
+
+    // Only do this if we are the device owner app and we don't have the lock task permission already.
+    if (!adminClassName.isEmpty() && !mDPM.isLockTaskPermitted(packageName) && mDPM.isDeviceOwnerApp(packageName)) {
+      ComponentName mDeviceAdmin = new ComponentName(packageName, packageName + "." + adminClassName);
+
+      Log.i("LockTask", "Setting lock task packages");
+      // Ideally, we'd only add our package to the list, but there's no `getLockTaskPackages`.
+      mDPM.setLockTaskPackages(mDeviceAdmin, new String[]{packageName});
+    }
 
     if (!activityManager.isInLockTaskMode()) {
       activity.startLockTask();
     }
 
-    initLockTaskInteval(activityManager);
-
     callbackContext.success();
     return true;
   }
 
-  /**
-   * Use this function to stop lockTask mode
-   *
-   * @param callbackContext
-   *        Cordova callback context
-   * @return true, valid action
-   */
   public boolean stopLockTask(CallbackContext callbackContext) {
     if (activityManager.isInLockTaskMode()) {
       activity.stopLockTask();
@@ -171,11 +124,7 @@ public class LockTask extends CordovaPlugin {
     return true;
   }
 
-  /**
-   * Is Lock task mode supported?
-   */
-  protected boolean isLockTaskSupported(CallbackContext callbackContext)
-  {
+  protected boolean isLockTaskSupported(CallbackContext callbackContext) {
     boolean supported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
     PluginResult res = new PluginResult(PluginResult.Status.OK, supported);
@@ -184,53 +133,12 @@ public class LockTask extends CordovaPlugin {
     return true;
   }
 
-  static void fireEvent (String event) {
-    String js = "window.LockTask.fireEvent(\"" + event + "\")";
-    sendJavascript(js);
-  }
+  protected boolean isInLockTaskMode(CallbackContext callbackContext) {
+    boolean active = activityManager.isInLockTaskMode();
 
-  /**
-   * Use this instead of deprecated sendJavascript
-   *
-   * @param js
-   *      JS code snippet as string
-   */
-  private static synchronized void sendJavascript(final String js) {
-    Runnable jsLoader = new Runnable() {
-      public void run() {
-        webView.loadUrl("javascript:" + js);
-      }
-    };
+    PluginResult res = new PluginResult(PluginResult.Status.OK, active);
+    callbackContext.sendPluginResult(res);
 
-    try {
-      Method post = webView.getClass().getMethod("post", Runnable.class);
-      post.invoke(webView, jsLoader);
-    } catch(Exception e) {
-      ((Activity)(webView.getContext())).runOnUiThread(jsLoader);
-    }
-  }
-
-  private static void initLockTaskInteval(final ActivityManager activityManager) {
-    if (handlerLockTaskActive != null) {
-      handlerLockTaskActive.removeCallbacksAndMessages(null);
-    }
-
-    handlerLockTaskActive = new Handler();
-    handlerLockTaskActive.postDelayed(new Runnable() {
-      private boolean isStarted = false;
-      @Override
-      public void run() {
-        if (!activityManager.isInLockTaskMode() && isStarted) {
-          handlerLockTaskActive.removeCallbacksAndMessages(null);
-          fireEvent("LockTaskModeExiting");
-        } else {
-          if(activityManager.isInLockTaskMode() && !isStarted) {
-            fireEvent("LockTaskModeEntering");
-            isStarted = true;
-          }
-          handlerLockTaskActive.postDelayed(this, 1000);
-        }
-      }
-    }, 1000);
+    return true;
   }
 }

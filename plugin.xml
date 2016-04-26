@@ -2,7 +2,7 @@
     <plugin
       xmlns="http://apache.org/cordova/ns/plugins/1.0"
       id="cordova-plugin-locktask"
-      version="0.0.7" >
+      version="1.0.0" >
       <name>cordova-plugin-locktask</name>
       <description>A Cordova plugin that provides access to Android’s screen pinning APIs</description>
       <license>Apache 2.0</license>
